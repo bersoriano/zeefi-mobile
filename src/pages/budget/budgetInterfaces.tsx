@@ -1,14 +1,4 @@
-export interface BudgetContextValue {
-  yearlyCompBT: number;
-  yearlyCompAT: number;
-  monthlySalaryAT: number;
-  recommendation: Recommendations;
-  totalExpenses: number;
-  totalSavings: number;
-  handleTotalCompChange: (event: any) => void;
-  handleCustomInput: (event: any, input:any) => void,  
-}
-export interface Recommendations {
+export interface BudgetRecommendations {
   rent: number;
   transport: number;
   food: number;
@@ -18,4 +8,14 @@ export interface Recommendations {
   investments: number;
   debtPayment: number;
   entertainment: number;
+}
+export interface BudgetState {
+  taxRate: number;
+  yearlySalaryGross: number;
+  yearlySalaryAT: number;
+  monthlySalaryGross: number;
+  monthlySalaryAT: number;
+  recommendation: BudgetRecommendations;
+  budgetBalance: number;
+  totalExpenses: number;
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   IonButtons,
   IonContent,
@@ -18,26 +18,48 @@ import {
 } from "@ionic/react";
 import usaStates from "./usaStates";
 import styles from "./budget.module.css";
-import { useBudgetContext } from "./BudgetProvider";
+import { BudgetState } from './budgetInterfaces';
+import { BudgetInitial, BudgetRecommendedRatiosAvg } from './budgetInitial';
 const BudgetPage: React.FC = () => {
   // const { name } = useParams<{ name: string }>();
   const [selectedState, setSelectedstate] = useState("Select your state");
-  const {
-    yearlyCompBT,
-    yearlyCompAT,
-    monthlySalaryAT,
-    handleTotalCompChange,
-    handleCustomInput,
-    recommendation,
-    totalExpenses,
-    totalSavings,
-  } = useBudgetContext();
-
-  const handleStateChange = (event: any) => {
-    const selectedState = event.target.value;
-    setSelectedstate(selectedState);
-  };
-
+  const [budget, setBudget] = useState({
+    ...BudgetInitial
+  });
+  const updateBudget = (event: any) => {
+    debugger;
+    const yearlySalaryGross = parseFloat(event.target.value);
+    const monthlySalaryAT = (yearlySalaryGross / 12) * (1 - budget.taxRate);
+    const RecommendedAmounts = {
+      rent: monthlySalaryAT * BudgetRecommendedRatiosAvg.rent,
+      transport: monthlySalaryAT * BudgetRecommendedRatiosAvg.transport,
+      food: monthlySalaryAT * BudgetRecommendedRatiosAvg.food,
+      services: monthlySalaryAT * BudgetRecommendedRatiosAvg.services,
+      health: monthlySalaryAT * BudgetRecommendedRatiosAvg.health,
+      entertainment: monthlySalaryAT * BudgetRecommendedRatiosAvg.entertainment,
+      debtPayment: monthlySalaryAT * BudgetRecommendedRatiosAvg.debtPayment,
+      savings: monthlySalaryAT * BudgetRecommendedRatiosAvg.savings,
+      investments: monthlySalaryAT * BudgetRecommendedRatiosAvg.savings,
+    };
+    const totalExpenses = Object.values(RecommendedAmounts).reduce(
+      (acc, value) => acc + value, 0);
+    const totalSavings = monthlySalaryAT - totalExpenses;               
+    const updatedBudget:BudgetState =  {
+      ...budget,
+      yearlySalaryGross,
+      yearlySalaryAT: yearlySalaryGross * (1 - budget.taxRate),
+      monthlySalaryGross: yearlySalaryGross / 12,
+      monthlySalaryAT,
+      recommendation: {...RecommendedAmounts, savings: totalSavings/2, investments: totalSavings/2},
+      budgetBalance: totalSavings,
+      totalExpenses
+    }
+    setBudget((prevState) => ({
+      ...prevState,
+      ...updatedBudget,
+    }));
+  }
+  useEffect(() => console.log("Updated budget; ", budget));
   return (
     <IonPage>
       {/* <IonHeader>
@@ -55,18 +77,19 @@ const BudgetPage: React.FC = () => {
           </header>
           <section className={styles.main}>
             <IonLabel className={styles.label} mode="ios">
-              💵 Total comp. before taxes per year.
+              💵 Anual salary. before taxes per year.
             </IonLabel>
             <div className={`${styles.flexRow} ${styles.textInput} `}>
               <IonItem>
                 <IonInput
-                  value={yearlyCompBT}
-                  onIonChange={(event) => handleTotalCompChange(event)}
+                  name = "budget-yearlySalaryGross"
+                  value = {budget.yearlySalaryGross}
+                  onIonChange={(event) => {updateBudget(event);}}
                   placeholder="Annual pay before taxes"
                   type="number"
                   label="$"
-                  inputMode="decimal"
-                ></IonInput>
+                  inputMode="decimal">
+                </IonInput>
               </IonItem>
               <span className={styles.inputDetail}>USD</span>
             </div>
@@ -78,10 +101,7 @@ const BudgetPage: React.FC = () => {
                 <IonSelect
                   mode="ios"
                   className={styles.dropDown}
-                  placeholder="Your state"
-                  onIonChange={(event) => handleStateChange(event)}
-                  value={selectedState}
-                >
+                  placeholder="Your state" value={selectedState}>
                   {usaStates.map((state) => (
                     <IonSelectOption key={state.name} value={state.name}>
                       {state.name}
@@ -96,7 +116,7 @@ const BudgetPage: React.FC = () => {
             >
               <span>Approximate Monthly Salary After Taxes</span>
               <span className={styles.amount}>
-                $ {monthlySalaryAT.toLocaleString("en-US")}
+                $ {budget.monthlySalaryAT.toLocaleString("en-US")}
               </span>
               <div className={styles.textBoxInfo}>
                 <span>
@@ -115,9 +135,9 @@ const BudgetPage: React.FC = () => {
                 <div className={`${styles.flexRow} ${styles.textInput} `}>
                   <IonItem>
                     <IonInput
-                      value={parseFloat(recommendation.rent.toString()).toFixed(
-                        2
-                      )}
+                      readonly
+                      name="budget-recommendation-rent"
+                      value={parseFloat(budget.recommendation.rent.toString()).toFixed(2)}
                       type="number"
                       label="$"
                       inputMode="decimal"
@@ -134,9 +154,10 @@ const BudgetPage: React.FC = () => {
                 <div className={`${styles.flexRow} ${styles.textInput} `}>
                   <IonItem>
                     <IonInput
+                      readonly
+                      name="budget-recommendation-transport"
                       value={parseFloat(
-                        recommendation.transport.toString()
-                      ).toFixed(2)}
+                        budget.recommendation.transport.toString()).toFixed(2)}
                       type="number"
                       label="$"
                       inputMode="decimal"
@@ -152,7 +173,9 @@ const BudgetPage: React.FC = () => {
                 <div className={`${styles.flexRow} ${styles.textInput} `}>
                   <IonItem>
                     <IonInput
-                      value={parseFloat(recommendation.food.toString()).toFixed(2)}
+                      readonly
+                      name="budget-recommendation-food"
+                      value={parseFloat(budget.recommendation.food.toString()).toFixed(2)}
                       type="number"
                       label="$"
                       inputMode="decimal"
@@ -168,8 +191,10 @@ const BudgetPage: React.FC = () => {
                 <div className={`${styles.flexRow} ${styles.textInput} `}>
                   <IonItem>
                     <IonInput
+                      readonly
+                      name="budget-recommendation-services"
                       value={parseFloat(
-                        recommendation.services.toString()
+                        budget.recommendation.services.toString()
                       ).toFixed(2)}
                       type="number"
                       label="$"
@@ -186,8 +211,10 @@ const BudgetPage: React.FC = () => {
                 <div className={`${styles.flexRow} ${styles.textInput} `}>
                   <IonItem>
                     <IonInput
+                      readonly
+                      name="budget-recommendation-health"
                       value={parseFloat(
-                        recommendation.health.toString()
+                        budget.recommendation.health.toString()
                       ).toFixed(2)}
                       type="number"
                       label="$"
@@ -204,9 +231,11 @@ const BudgetPage: React.FC = () => {
                 <div className={`${styles.flexRow} ${styles.textInput} `}>
                   <IonItem>
                     <IonInput
-                      onIonChange={(event) => handleCustomInput(event, recommendation.debtPayment)}                    
+                      readonly
+                      name="budget-recommendation-debtPayment"
+                      // onIonChange={(event) => handleCustomInput(event, recommendation.debtPayment)}                    
                       value={parseFloat(
-                        recommendation.debtPayment.toString()
+                        budget.recommendation.debtPayment.toString()
                       ).toFixed(2)}
                       type="number"
                       label="$"
@@ -223,8 +252,10 @@ const BudgetPage: React.FC = () => {
                 <div className={`${styles.flexRow} ${styles.textInput} `}>
                   <IonItem>
                     <IonInput
+                      readonly
+                      name="budget-recommendation-entertainment"
                       value={parseFloat(
-                        recommendation.entertainment.toString()
+                        budget.recommendation.entertainment.toString()
                       ).toFixed(2)}
                       type="number"
                       label="$"
@@ -240,7 +271,7 @@ const BudgetPage: React.FC = () => {
             >
               <span>Your Expenses:</span>
               <span className={styles.amount}>
-                $ {totalExpenses.toLocaleString("en-US")}
+                $ {budget.totalExpenses.toLocaleString("en-US")}
               </span>
               <div className={styles.textBoxInfo}>
                 <span>
@@ -257,7 +288,7 @@ const BudgetPage: React.FC = () => {
             >
               <span>Your Savings:</span>
               <span className={styles.amount}>
-                $ {totalSavings.toLocaleString("en-US")}
+                $ {budget.budgetBalance.toLocaleString("en-US")}
               </span>
               <div className={styles.textBoxInfo}>
                 <span>
@@ -280,8 +311,9 @@ const BudgetPage: React.FC = () => {
                 <div className={`${styles.flexRow} ${styles.textInput} `}>
                   <IonItem>
                     <IonInput
+                      name="budget-recommendation-savings"
                       value={parseFloat(
-                        recommendation.savings.toString()
+                        budget.recommendation.savings.toString()
                       ).toFixed(2)}
                       type="number"
                       label="$"
@@ -298,8 +330,9 @@ const BudgetPage: React.FC = () => {
                 <div className={`${styles.flexRow} ${styles.textInput} `}>
                   <IonItem>
                     <IonInput
+                      name="budget-recommendation-investments"
                       value={parseFloat(
-                        recommendation.investments.toString()
+                        budget.recommendation.investments.toString()
                       ).toFixed(2)}
                       type="number"
                       label="$"
