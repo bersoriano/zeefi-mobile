@@ -16,19 +16,27 @@ import {
   IonSelect,
   IonSelectOption,
 } from "@ionic/react";
-import usaStates from "./usaStates";
 import styles from "./budget.module.css";
 import { BudgetState } from './budgetInterfaces';
 import { BudgetInitial, BudgetRecommendedRatiosAvg } from './budgetInitial';
+import USAStatesIncomeTaxRates_Single_90k from './USAIncomeStateTax'
 const BudgetPage: React.FC = () => {
   // const { name } = useParams<{ name: string }>();
-  const [selectedState, setSelectedstate] = useState("Select your state");
+  const [selectedState, setSelectedTaxstate] = useState("Select your state");
   const [budget, setBudget] = useState({
     ...BudgetInitial
   });
-  const updateBudget = (event: any) => {
-    debugger;
-    const yearlySalaryGross = parseFloat(event.target.value);
+
+  useEffect(() => {
+    const updatedBudget = executeCalculations();
+    setBudget((prevState) => ({
+      ...prevState,
+      ...updatedBudget
+    })); 
+  },[selectedState])
+
+  const executeCalculations = (): BudgetState => {
+    const yearlySalaryGross = budget.yearlySalaryGross;
     const monthlySalaryAT = (yearlySalaryGross / 12) * (1 - budget.taxRate);
     const RecommendedAmounts = {
       rent: monthlySalaryAT * BudgetRecommendedRatiosAvg.rent,
@@ -44,7 +52,7 @@ const BudgetPage: React.FC = () => {
     const totalExpenses = Object.values(RecommendedAmounts).reduce(
       (acc, value) => acc + value, 0);
     const totalSavings = monthlySalaryAT - totalExpenses;               
-    const updatedBudget:BudgetState =  {
+    return  {
       ...budget,
       yearlySalaryGross,
       yearlySalaryAT: yearlySalaryGross * (1 - budget.taxRate),
@@ -53,11 +61,23 @@ const BudgetPage: React.FC = () => {
       recommendation: {...RecommendedAmounts, savings: totalSavings/2, investments: totalSavings/2},
       budgetBalance: totalSavings,
       totalExpenses
-    }
+    }    
+  }
+
+  const updateBudget = (event: any) => {
     setBudget((prevState) => ({
       ...prevState,
-      ...updatedBudget,
+      yearlySalaryGross: parseFloat(event.target.value)
     }));
+  }
+  const updateIncomeState = (event: any) => {
+    const selectedTaxState = USAStatesIncomeTaxRates_Single_90k.find(obj => obj.name === event.target.value);
+    const totalStateIncomeTax = Object.values(selectedTaxState.incomeTaxRate).reduce((acc,value)=> acc + value, 0);
+    setBudget((prevState) => ({
+      ...prevState,
+      taxRate: totalStateIncomeTax
+    }));
+    setSelectedTaxstate(selectedTaxState.name);
   }
   useEffect(() => console.log("Updated budget; ", budget));
   return (
@@ -100,9 +120,10 @@ const BudgetPage: React.FC = () => {
               <IonItem>
                 <IonSelect
                   mode="ios"
+                  onIonChange = {(event) => {updateIncomeState(event)}}
                   className={styles.dropDown}
-                  placeholder="Your state" value={selectedState}>
-                  {usaStates.map((state) => (
+                  placeholder="Select a State" value={selectedState}>
+                  {USAStatesIncomeTaxRates_Single_90k.map((state: {name: string,abbreviation: string }) => (
                     <IonSelectOption key={state.name} value={state.name}>
                       {state.name}
                     </IonSelectOption>
