@@ -22,6 +22,7 @@ import { BudgetInitial, BudgetRecommendedRatiosAvg } from './budgetInitial';
 import USAStatesIncomeTaxRates_Single_90k from './USAIncomeStateTax'
 const BudgetPage: React.FC = () => {
   // const { name } = useParams<{ name: string }>();
+  const defaultStateTax = { name: 'Default', abbreviation: 'DF', incomeTaxRate: { federal: 0.1340, fica: 0.0765, state: 0.00, local: 0.00 } }
   const [selectedState, setSelectedTaxstate] = useState("Select your state");
   const [budget, setBudget] = useState({
     ...BudgetInitial
@@ -64,14 +65,14 @@ const BudgetPage: React.FC = () => {
     }    
   }
 
-  const updateBudget = (event: any) => {
+  const updateBudget = (event: React.ChangeEvent<HTMLInputElement>) => {
     setBudget((prevState) => ({
       ...prevState,
       yearlySalaryGross: parseFloat(event.target.value)
     }));
   }
-  const updateIncomeState = (event: any) => {
-    const selectedTaxState = USAStatesIncomeTaxRates_Single_90k.find(obj => obj.name === event.target.value);
+  const updateIncomeState = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedTaxState = USAStatesIncomeTaxRates_Single_90k.find(obj => obj.name === event.target.value) || defaultStateTax ;
     const totalStateIncomeTax = Object.values(selectedTaxState.incomeTaxRate).reduce((acc,value)=> acc + value, 0);
     setBudget((prevState) => ({
       ...prevState,
