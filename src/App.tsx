@@ -32,7 +32,6 @@ const App: React.FC = () => {
     <IonApp>
       <IonReactRouter>
         <IonSplitPane contentId="main">
-          <Menu />
           <IonRouterOutlet id="main">
             <Route path="/" exact={true}>
               <Redirect to="/folder/Inbox" />
